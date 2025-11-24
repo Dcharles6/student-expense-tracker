@@ -8,8 +8,28 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+
 } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
+const totalSpending = filteredExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+
+<Text style={{ fontSize: 18, fontWeight: 'bold', marginVertical: 10 }}>
+  Total Spending ({filter === 'all' ? 'All' : filter === 'week' ? 'This Week' : 'This Month'}): ${totalSpending.toFixed(2)}
+</Text>
+const totalsByCategory = filteredExpenses.reduce((acc, expense) => {
+  if (!acc[expense.category]) acc[expense.category] = 0;
+  acc[expense.category] += parseFloat(expense.amount);
+  return acc;
+}, {});
+<View style={{ marginVertical: 10 }}>
+  <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Totals by Category:</Text>
+  {Object.entries(totalsByCategory).map(([category, total]) => (
+    <Text key={category}>
+      {category}: ${total.toFixed(2)}
+    </Text>
+  ))}
+</View>
+
 
 export default function ExpenseScreen() {
   const db = useSQLiteContext();
@@ -195,3 +215,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+const filteredExpenses = expenses.filter(exp => {
+  const expDate = new Date(exp.date);
+  const now = new Date();
+
+  if (filter === 'week') {
+    const firstDayOfWeek = new Date(now);
+    firstDayOfWeek.setDate(now.getDate() - now.getDay());
+    const lastDayOfWeek = new Date(firstDayOfWeek);
+    lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
+    return expDate >= firstDayOfWeek && expDate <= lastDayOfWeek;
+  }
+
+  if (filter === 'month') {
+    return expDate.getMonth() === now.getMonth() &&
+           expDate.getFullYear() === now.getFullYear();
+  }
+
+  return true; // all
+});
+<View style={{ flexDirection: 'row', justifyContent: 'space-around', marginVertical: 10 }}>
+  <Button title="All" onPress={() => setFilter('all')} />
+  <Button title="This Week" onPress={() => setFilter('week')} />
+  <Button title="This Month" onPress={() => setFilter('month')} />
+</View>
